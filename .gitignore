@@ -1,0 +1,10 @@
+.env
+node_modules/
+uploads/
+*.log
+dist/
+build/
+coverage/
+.DS_Store
+*.sqlite
+*.local
