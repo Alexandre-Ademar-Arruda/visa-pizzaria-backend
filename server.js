@@ -5,14 +5,18 @@ const mongoose = require('mongoose'); // ODM para MongoDB
 const multer = require('multer'); // Upload de arquivos
 const cors = require('cors'); // Permite acesso de outros domínios (frontend)
 const path = require('path'); // Manipula caminhos de arquivos
+const fs = require('fs'); // Adicionado para manipular arquivos e pastas
 
 const app = express(); // Cria o servidor Express
 
-//2. Cria o servidor Express
+// 2. Conecta ao MongoDB
 mongoose.connect(process.env.MONGODB_URI);
-/*
-mongoose.connect('mongodb+srv://decomongoDB:2444134-dcmngDB@visa-pizzaria.gpbjngq.mongodb.net/pizzaria?retryWrites=true&w=majority&appName=ViSa-Pizzaria');
-*/
+
+// 2.1. Garante que a pasta uploads exista na raiz do projeto
+const uploadDir = path.join(__dirname, 'uploads'); // Caminho correto para uploads
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
 
 // 3. Define o modelo da pizza
 const pizzaSchema = new mongoose.Schema({
@@ -35,7 +39,7 @@ app.use(express.urlencoded({ extended: true })); // Permite receber dados de for
 // 5. Configura o multer para salvar arquivos em 'uploads/' na raiz do projeto
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, '..', 'uploads')); // Pasta onde as imagens serão salvas
+        cb(null, uploadDir); // Usa a pasta garantida acima
     },
     filename: function (req, file, cb) {
         // Salva o arquivo com um nome único (timestamp + extensão)
@@ -45,7 +49,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // 6. Rota para servir imagens estáticas (acesso público)
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+app.use('/uploads', express.static(uploadDir));
 
 // 7. Rota para cadastrar uma nova pizza (recebe imagem e dados)
 app.post('/api/pizzas', upload.single('imagem'), async (req, res) => {
@@ -68,7 +72,7 @@ app.post('/api/pizzas', upload.single('imagem'), async (req, res) => {
     }
 });
 
-// 8. (Opcional) Rota para listar todas as pizzas cadastradas
+// 8. Rota para listar todas as pizzas cadastradas
 app.get('/api/pizzas', async (req, res) => {
     const pizzas = await Pizza.find();
     res.json(pizzas);
