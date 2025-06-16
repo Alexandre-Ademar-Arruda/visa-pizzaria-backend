@@ -1,84 +1,107 @@
 // 1. Importa as bibliotecas necessárias
 require('dotenv').config();
-const express = require('express'); // Framework web
+const express  = require('express');  // Framework web
 const mongoose = require('mongoose'); // ODM para MongoDB
-const multer = require('multer'); // Upload de arquivos
-const cors = require('cors'); // Permite acesso de outros domínios (frontend)
-const path = require('path'); // Manipula caminhos de arquivos
-const fs = require('fs'); // Adicionado para manipular arquivos e pastas
+const multer   = require('multer');   // Upload de arquivos
+const cors     = require('cors');     // Permite acesso de outros domínios (frontend)
+const path     = require('path');     // Manipula caminhos de arquivos
+const fs       = require('fs');       // Manipula arquivos e pastas
 
-const app = express(); // Cria o servidor Express
+const app = express();                // Cria o servidor Express
 
 // 2. Conecta ao MongoDB
 mongoose.connect(process.env.MONGODB_URI);
 
 // 2.1. Garante que a pasta uploads exista na raiz do projeto
-const uploadDir = path.join(__dirname, 'uploads'); // Caminho correto para uploads
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-// 3. Define o modelo da pizza
+// === 3. SCHEMAS ============================================================
+// 3A. Pizza (já existia)
 const pizzaSchema = new mongoose.Schema({
-    nome: String,
-    ingredientes: String,
-    preco: {
-        pequeno: String,
-        medio: String,
-        grande: String
-    },
-    imagem: String // Caminho do arquivo da imagem
+  nome: String,
+  ingredientes: String,
+  preco: { pequeno: String, medio: String, grande: String },
+  imagem: String
 });
 const Pizza = mongoose.model('Pizza', pizzaSchema);
 
-// 4. Middlewares globais
-app.use(cors()); // Permite requisições de outros domínios
-app.use(express.json()); // Permite receber JSON
-app.use(express.urlencoded({ extended: true })); // Permite receber dados de formulários
-
-// 5. Configura o multer para salvar arquivos em 'uploads/' na raiz do projeto
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir); // Usa a pasta garantida acima
-    },
-    filename: function (req, file, cb) {
-        // Salva o arquivo com um nome único (timestamp + extensão)
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
+// 3B. Bebida (NOVO)
+const bebidaSchema = new mongoose.Schema({
+  nome: String,
+  ingredientes: String,   // descrição opcional
+  preco: String,          // ex.: '8.00'  (use objeto se quiser tamanhos)
+  imagem: String
 });
-const upload = multer({ storage: storage });
+const Bebida = mongoose.model('Bebida', bebidaSchema);
 
-// 6. Rota para servir imagens estáticas (acesso público)
+// 4. Middlewares globais
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// 5. Configura o multer para salvar arquivos em /uploads
+const storage = multer.diskStorage({
+  destination: (_, __, cb) => cb(null, uploadDir),
+  filename:    (_, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+});
+const upload = multer({ storage });
+
+// 6. Rota estática para imagens
 app.use('/uploads', express.static(uploadDir));
 
-// 7. Rota para cadastrar uma nova pizza (recebe imagem e dados)
+// ====================== ROTAS PIZZA ========================================
+// POST /api/pizzas
 app.post('/api/pizzas', upload.single('imagem'), async (req, res) => {
-    try {
-        const { nome, ingredientes, preco_pequeno, preco_medio, preco_grande } = req.body;
-        const pizza = new Pizza({
-            nome,
-            ingredientes,
-            preco: {
-                pequeno: preco_pequeno || '',
-                medio: preco_medio || '',
-                grande: preco_grande || ''
-            },
-            imagem: req.file ? `/uploads/${req.file.filename}` : ''
-        });
-        await pizza.save();
-        res.status(201).json({ message: 'Pizza salva com sucesso!' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+  try {
+    const { nome, ingredientes, preco_pequeno, preco_medio, preco_grande } = req.body;
+    const pizza = new Pizza({
+      nome,
+      ingredientes,
+      preco: {
+        pequeno: preco_pequeno || '',
+        medio:   preco_medio   || '',
+        grande:  preco_grande  || ''
+      },
+      imagem: req.file ? `/uploads/${req.file.filename}` : ''
+    });
+    await pizza.save();
+    res.status(201).json({ message: 'Pizza salva com sucesso!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// 8. Rota para listar todas as pizzas cadastradas
-app.get('/api/pizzas', async (req, res) => {
-    const pizzas = await Pizza.find();
-    res.json(pizzas);
+// GET /api/pizzas
+app.get('/api/pizzas', async (_, res) => {
+  const pizzas = await Pizza.find();
+  res.json(pizzas);
 });
 
-// 9. Inicia o servidor na porta 3001
-app.listen(3001, () => {
-    console.log('Servidor rodando em http://localhost:3001');
+// ====================== ROTAS BEBIDA (NOVAS) ===============================
+// POST /api/bebidas
+app.post('/api/bebidas', upload.single('imagem'), async (req, res) => {
+  try {
+    const { nome, ingredientes, preco } = req.body;
+    const bebida = new Bebida({
+      nome,
+      ingredientes,
+      preco,
+      imagem: req.file ? `/uploads/${req.file.filename}` : ''
+    });
+    await bebida.save();
+    res.status(201).json({ message: 'Bebida salva com sucesso!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
+
+// GET /api/bebidas
+app.get('/api/bebidas', async (_, res) => {
+  const bebidas = await Bebida.find();
+  res.json(bebidas);
+});
+
+// 9. Inicia o servidor
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Servidor rodando em http://localhost:${PORT}`));
