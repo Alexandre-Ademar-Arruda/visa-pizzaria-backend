@@ -11,7 +11,10 @@ const fs       = require('fs');       // Manipula arquivos e pastas
 const app = express();                // Cria o servidor Express
 
 // 2. Conecta ao MongoDB
-mongoose.connect(process.env.MONGODB_URI);
+mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
 // 2.1. Garante que a pasta uploads exista na raiz do projeto
 const uploadDir = path.join(__dirname, 'uploads');
@@ -26,7 +29,7 @@ const pizzaSchema = new mongoose.Schema({
   imagem: String
 });
 const Pizza = mongoose.model('Pizza', pizzaSchema);
-
+// ===========================================================================
 // 3B. Bebida (NOVO)
 const bebidaSchema = new mongoose.Schema({
   nome: String,
@@ -35,6 +38,15 @@ const bebidaSchema = new mongoose.Schema({
   imagem: String
 });
 const Bebida = mongoose.model('Bebida', bebidaSchema);
+// ===========================================================================
+// 3C. Sobremesa (NOVO)
+const sobremesaSchema = new mongoose.Schema({
+  nome: String,
+  ingredientes: String,   // descrição opcional
+  preco: String,          // ex.: '8.00'  (use objeto se quiser tamanhos)
+  imagem: String
+});
+const Sobremesa = mongoose.model('Sobremesa', sobremesaSchema);
 
 // 4. Middlewares globais
 app.use(cors());
@@ -50,6 +62,8 @@ const upload = multer({ storage });
 
 // 6. Rota estática para imagens
 app.use('/uploads', express.static(uploadDir));
+
+////////////////////////////////////////////////////////////////////////////////
 
 // ====================== ROTAS PIZZA ========================================
 // POST /api/pizzas
@@ -79,6 +93,8 @@ app.get('/api/pizzas', async (_, res) => {
   res.json(pizzas);
 });
 
+////////////////////////////////////////////////////////////////////////////////
+
 // ====================== ROTAS BEBIDA (NOVAS) ===============================
 // POST /api/bebidas
 app.post('/api/bebidas', upload.single('imagem'), async (req, res) => {
@@ -101,6 +117,32 @@ app.post('/api/bebidas', upload.single('imagem'), async (req, res) => {
 app.get('/api/bebidas', async (_, res) => {
   const bebidas = await Bebida.find();
   res.json(bebidas);
+});
+
+////////////////////////////////////////////////////////////////////////////////
+
+// ====================== ROTAS BEBIDA (NOVAS) ===============================
+// POST /api/sobremesas
+app.post('/api/sobremesas', upload.single('imagem'), async (req, res) => {
+  try {
+    const { nome, ingredientes, preco } = req.body;
+    const sobremesa = new Sobremesa({
+      nome,
+      ingredientes,
+      preco,
+      imagem: req.file ? `/uploads/${req.file.filename}` : ''
+    });
+    await sobremesa.save();
+    res.status(201).json({ message: 'Sobremesa salva com sucesso!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/sobremesas
+app.get('/api/sobremesas', async (_, res) => {
+  const sobremesas = await Sobremesa.find();
+  res.json(sobremesas);
 });
 
 
