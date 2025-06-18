@@ -1,4 +1,5 @@
 // 1. Importa as bibliotecas necessárias
+require('./KeepAlive.js'); // Modulo para manter o backend ativo
 require('dotenv').config();
 const express  = require('express');  // Framework web
 const mongoose = require('mongoose'); // ODM para MongoDB
@@ -101,6 +102,14 @@ app.get('/api/bebidas', async (_, res) => {
   const bebidas = await Bebida.find();
   res.json(bebidas);
 });
+
+
+// ✅Rota de teste para verificar se o servidor esta rodando
+app.get('/', (req, res) => {
+  res.send('API ViSa Pizzaria online!');
+  console.log(`Ping recebido - servidor está ativo!`);
+});
+
 
 // 9. Inicia o servidor
 const PORT = process.env.PORT || 3001;
