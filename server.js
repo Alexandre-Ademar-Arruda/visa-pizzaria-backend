@@ -47,6 +47,16 @@ const sobremesaSchema = new mongoose.Schema({
   imagem: String
 });
 const Sobremesa = mongoose.model('Sobremesa', sobremesaSchema);
+// ===========================================================================
+const saladaSchema = new mongoose.Schema({
+  nome: String,
+  ingredientes: String,
+  preco: String,
+  imagem: String
+});
+const Salada = mongoose.Schema('Salada', saladaSchema);
+
+// ===========================================================================
 
 // 4. Middlewares globais
 app.use(cors());
@@ -145,6 +155,28 @@ app.get('/api/sobremesas', async (_, res) => {
   res.json(sobremesas);
 });
 
+// ====================== ROTAS BEBIDA (NOVAS) ===============================
+app.post('/api/saladas', upload.single('imagem'), async (req, res) => {
+  try {
+    const { nome, ingredientes, preco } = req.body;
+    const salada = new Salada( {
+      nome,
+      ingredientes,
+      preco,
+      imagem: req.file ? '/uploads' + req.file.filename : ''
+    });
+    await salada.save();
+    res.status(201).json({ message: 'Salada Cadastrada com Sucesso!'});
+  } catch (err) {
+    res.status(500).json({error: err.message});
+  }
+})
+app.get('/api/saladas', async (_, res) => {
+  const saladas = await Salada.find();
+  res.json(saladas);
+  });
+
+////////////////////////////////////////////////////////////////////////////////
 
 // ✅Rota de teste para verificar se o servidor esta rodando
 app.get('/', (req, res) => {
