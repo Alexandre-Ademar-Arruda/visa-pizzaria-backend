@@ -8,7 +8,7 @@
 const https = require('https');        // Módulo nativo do Node p/ HTTPS
 const { URL } = require('url');        // Ajuda a validar a URL
 
-// 🔧 Substitua pela URL pública do backend
+// 🔧 URL pública do backend
 const RENDER_URL = 'https://visa-pizzaria-backend.onrender.com';
 
 // Valida se a URL usa HTTPS

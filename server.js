@@ -184,6 +184,18 @@ app.get('/', (req, res) => {
   console.log(`Ping recebido - servidor está ativo!`);
 });
 
+//tambem foi criei um monitor no
+//https://dashboard.uptimerobot.com/monitors com checagem a cada 5 minutos
+//como funciona?
+//uptimerobot
+//envia uma requisição a render
+//aguarda resposta
+//verifica o tempo de resposta
+//obs.: essa requisição já da uma despertada no render mas como nao estava 
+//sendo suficiente criamos o codigo acima => // ✅Rota de teste para verificar se o servidor esta rodando
+
+
+
 
 // 9. Inicia o servidor
 const PORT = process.env.PORT || 3001;
