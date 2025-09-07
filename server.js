@@ -112,17 +112,18 @@ app.get('/api/pizzas', async (_, res) => {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// ====================== ROTAS BEBIDA (NOVAS) ===============================
+// ====================== ROTAS BEBIDA ===============================
 // POST /api/bebidas
 app.post('/api/bebidas', async (req, res) => {
   try {
-    const { nome, ingredientes, preco } = req.body;
+    const { nome, ingredientes, preco, base64_imagem } = req.body;
     const bebida = new Bebida({
       nome,
       ingredientes,
       preco,
-      imagem: req.file ? `/uploads/${req.file.filename}` : ''
+      imagem: base64_imagem || ''
     });
+
     await bebida.save();
     res.status(201).json({ message: 'Bebida salva com sucesso!' });
   } catch (err) {
@@ -139,45 +140,22 @@ app.get('/api/bebidas', async (_, res) => {
 ////////////////////////////////////////////////////////////////////////////////
 
 // ====================== ROTAS BEBIDA (NOVAS) ===============================
-// POST /api/sobremesas
-app.post('/api/sobremesas', upload.single('imagem'), async (req, res) => {
+app.post('/api/saladas', async (req, res) => {
   try {
-    const { nome, ingredientes, preco } = req.body;
-    const sobremesa = new Sobremesa({
-      nome,
-      ingredientes,
-      preco,
-      imagem: req.file ? `/uploads/${req.file.filename}` : ''
-    });
-    await sobremesa.save();
-    res.status(201).json({ message: 'Sobremesa salva com sucesso!' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET /api/sobremesas
-app.get('/api/sobremesas', async (_, res) => {
-  const sobremesas = await Sobremesa.find();
-  res.json(sobremesas);
-});
-
-// ====================== ROTAS BEBIDA (NOVAS) ===============================
-app.post('/api/saladas', upload.single('imagem'), async (req, res) => {
-  try {
-    const { nome, ingredientes, preco } = req.body;
+    const { nome, ingredientes, preco, base64_imagem } = req.body;
     const salada = new Salada({
       nome,
       ingredientes,
       preco,
-      imagem: req.file ? `/uploads/${req.file.filename}` : ''
-  });
+      imagem: base64_imagem || ''
+   });
+
     await salada.save();
     res.status(201).json({ message: 'Salada Cadastrada com Sucesso!'});
   } catch (err) {
-    res.status(500).json({error: err.message});
-  }
-})
+      res.status(500).json({error: err.message});
+    }
+  })
 // GET /api/saladas
 app.get('/api/saladas', async (_, res) => {
   const saladas = await Salada.find();
