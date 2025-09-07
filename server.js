@@ -77,9 +77,10 @@ app.use('/uploads', express.static(uploadDir));
 
 // ====================== ROTAS PIZZA ========================================
 // POST /api/pizzas
-app.post('/api/pizzas', upload.single('imagem'), async (req, res) => {
+app.post('/api/pizzas', async (req, res) => {
   try {
-    const { nome, ingredientes, preco_pequeno, preco_medio, preco_grande } = req.body;
+    const { nome, ingredientes, preco_pequeno, preco_medio, preco_grande, base64_imagem } = req.body;
+    
     const pizza = new Pizza({
       nome,
       ingredientes,
@@ -88,8 +89,9 @@ app.post('/api/pizzas', upload.single('imagem'), async (req, res) => {
         medio:   preco_medio   || '',
         grande:  preco_grande  || ''
       },
-      imagem: req.file ? `/uploads/${req.file.filename}` : ''
+      imagem: base64_imagem || ''
     });
+
     await pizza.save();
     res.status(201).json({ message: 'Pizza salva com sucesso!' });
   } catch (err) {
@@ -99,15 +101,20 @@ app.post('/api/pizzas', upload.single('imagem'), async (req, res) => {
 
 // GET /api/pizzas
 app.get('/api/pizzas', async (_, res) => {
-  const pizzas = await Pizza.find();
-  res.json(pizzas);
+  try {
+    const pizzas = await Pizza.find();
+    res.json(pizzas);
+
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar pizzas'});
+  }
 });
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // ====================== ROTAS BEBIDA (NOVAS) ===============================
 // POST /api/bebidas
-app.post('/api/bebidas', upload.single('imagem'), async (req, res) => {
+app.post('/api/bebidas', async (req, res) => {
   try {
     const { nome, ingredientes, preco } = req.body;
     const bebida = new Bebida({
