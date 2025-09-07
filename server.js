@@ -3,7 +3,7 @@ require('./KeepAlive.js'); // Modulo para manter o backend ativo
 require('dotenv').config();
 const express  = require('express');  // Framework web
 const mongoose = require('mongoose'); // ODM para MongoDB
-const multer   = require('multer');   // Upload de arquivos
+
 const cors     = require('cors');     // Permite acesso de outros domínios (frontend)
 const path     = require('path');     // Manipula caminhos de arquivos
 const fs       = require('fs');       // Manipula arquivos e pastas
@@ -139,28 +139,23 @@ app.get('/api/bebidas', async (_, res) => {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// ====================== ROTAS BEBIDA (NOVAS) ===============================
-app.post('/api/saladas', async (req, res) => {
+// ====================== ROTAS SOBREMESAS ===============================
+app.post('/api/sobremesas', async (req, res) => {
   try {
     const { nome, ingredientes, preco, base64_imagem } = req.body;
-    const salada = new Salada({
+    const sobremesa = new Sobremesa({
       nome,
       ingredientes,
       preco,
       imagem: base64_imagem || ''
-   });
-
-    await salada.save();
-    res.status(201).json({ message: 'Salada Cadastrada com Sucesso!'});
+    });
+    await sobremesa.save();
+    res.status(201).json({ message: 'Sobremesa cadastrada com sucesso!' });
   } catch (err) {
-      res.status(500).json({error: err.message});
-    }
-  })
-// GET /api/saladas
-app.get('/api/saladas', async (_, res) => {
-  const saladas = await Salada.find();
-  res.json(saladas);
-  });
+    res.status(500).json({ error: err.message });
+  }
+});
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // ✅Rota de teste para verificar se o servidor esta rodando
