@@ -1,14 +1,11 @@
 // 1. Importa as bibliotecas necessárias
-require('./KeepAlive.js'); // Modulo para manter o backend ativo
+require('./KeepAlive.js'); // Módulo para manter o backend ativo
 require('dotenv').config();
-const express  = require('express');  // Framework web
-const mongoose = require('mongoose'); // ODM para MongoDB
+const express  = require('express');
+const mongoose = require('mongoose');
+const cors     = require('cors');
 
-const cors     = require('cors');     // Permite acesso de outros domínios (frontend)
-const path     = require('path');     // Manipula caminhos de arquivos
-const fs       = require('fs');       // Manipula arquivos e pastas
-
-const app = express();                // Cria o servidor Express
+const app = express();
 
 // 2. Conecta ao MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
@@ -16,38 +13,35 @@ mongoose.connect(process.env.MONGODB_URI, {
   useUnifiedTopology: true
 });
 
-// 2.1. Garante que a pasta uploads exista na raiz do projeto
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-
 // === 3. SCHEMAS ============================================================
-// 3A. Pizza (já existia)
+// Pizza
 const pizzaSchema = new mongoose.Schema({
   nome: String,
   ingredientes: String,
   preco: { pequeno: String, medio: String, grande: String },
-  imagem: String
+  imagem: String // aqui vai a base64
 });
 const Pizza = mongoose.model('Pizza', pizzaSchema);
-// ===========================================================================
-// 3B. Bebida (NOVO)
+
+// Bebida
 const bebidaSchema = new mongoose.Schema({
   nome: String,
-  ingredientes: String,   // descrição opcional
-  preco: String,          // ex.: '8.00'  (use objeto se quiser tamanhos)
+  ingredientes: String,
+  preco: String,
   imagem: String
 });
 const Bebida = mongoose.model('Bebida', bebidaSchema);
-// ===========================================================================
-// 3C. Sobremesa (NOVO)
+
+// Sobremesa
 const sobremesaSchema = new mongoose.Schema({
   nome: String,
-  ingredientes: String,   // descrição opcional
-  preco: String,          // ex.: '8.00'  (use objeto se quiser tamanhos)
+  ingredientes: String,
+  preco: String,
   imagem: String
 });
 const Sobremesa = mongoose.model('Sobremesa', sobremesaSchema);
-// ===========================================================================
+
+// Salada
 const saladaSchema = new mongoose.Schema({
   nome: String,
   ingredientes: String,
@@ -57,29 +51,17 @@ const saladaSchema = new mongoose.Schema({
 const Salada = mongoose.model('Salada', saladaSchema);
 
 // ===========================================================================
-
 // 4. Middlewares globais
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// 5. Configura o multer para salvar arquivos em /uploads
-const storage = multer.diskStorage({
-  destination: (_, __, cb) => cb(null, uploadDir),
-  filename:    (_, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
-});
-const upload = multer({ storage });
-
-// 6. Rota estática para imagens
-app.use('/uploads', express.static(uploadDir));
+app.use(express.json({ limit: '10mb' })); // aumenta limite pra base64
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 ////////////////////////////////////////////////////////////////////////////////
-
 // ====================== ROTAS PIZZA ========================================
 // POST /api/pizzas
 app.post('/api/pizzas', async (req, res) => {
   try {
-    const { nome, ingredientes, preco_pequeno, preco_medio, preco_grande, base64_imagem } = req.body;
+    const { nome, ingredientes, preco_pequeno, preco_medio, preco_grande, imagem } = req.body;
     
     const pizza = new Pizza({
       nome,
@@ -89,7 +71,7 @@ app.post('/api/pizzas', async (req, res) => {
         medio:   preco_medio   || '',
         grande:  preco_grande  || ''
       },
-      imagem: base64_imagem || ''
+      imagem: imagem || ''
     });
 
     await pizza.save();
@@ -104,26 +86,17 @@ app.get('/api/pizzas', async (_, res) => {
   try {
     const pizzas = await Pizza.find();
     res.json(pizzas);
-
   } catch (err) {
     res.status(500).json({ error: 'Erro ao buscar pizzas'});
   }
 });
 
 ////////////////////////////////////////////////////////////////////////////////
-
-// ====================== ROTAS BEBIDA ===============================
-// POST /api/bebidas
+// ====================== ROTAS BEBIDA ========================================
 app.post('/api/bebidas', async (req, res) => {
   try {
-    const { nome, ingredientes, preco, base64_imagem } = req.body;
-    const bebida = new Bebida({
-      nome,
-      ingredientes,
-      preco,
-      imagem: base64_imagem || ''
-    });
-
+    const { nome, ingredientes, preco, imagem } = req.body;
+    const bebida = new Bebida({ nome, ingredientes, preco, imagem: imagem || '' });
     await bebida.save();
     res.status(201).json({ message: 'Bebida salva com sucesso!' });
   } catch (err) {
@@ -131,24 +104,17 @@ app.post('/api/bebidas', async (req, res) => {
   }
 });
 
-// GET /api/bebidas
 app.get('/api/bebidas', async (_, res) => {
   const bebidas = await Bebida.find();
   res.json(bebidas);
 });
 
 ////////////////////////////////////////////////////////////////////////////////
-
-// ====================== ROTAS SOBREMESAS ===============================
+// ====================== ROTAS SOBREMESAS ====================================
 app.post('/api/sobremesas', async (req, res) => {
   try {
-    const { nome, ingredientes, preco, base64_imagem } = req.body;
-    const sobremesa = new Sobremesa({
-      nome,
-      ingredientes,
-      preco,
-      imagem: base64_imagem || ''
-    });
+    const { nome, ingredientes, preco, imagem } = req.body;
+    const sobremesa = new Sobremesa({ nome, ingredientes, preco, imagem: imagem || '' });
     await sobremesa.save();
     res.status(201).json({ message: 'Sobremesa cadastrada com sucesso!' });
   } catch (err) {
@@ -156,26 +122,35 @@ app.post('/api/sobremesas', async (req, res) => {
   }
 });
 
-////////////////////////////////////////////////////////////////////////////////
+app.get('/api/sobremesas', async (_, res) => {
+  const sobremesas = await Sobremesa.find();
+  res.json(sobremesas);
+});
 
-// ✅Rota de teste para verificar se o servidor esta rodando
+////////////////////////////////////////////////////////////////////////////////
+// ====================== ROTAS SALADA ========================================
+app.post('/api/saladas', async (req, res) => {
+  try {
+    const { nome, ingredientes, preco, imagem } = req.body;
+    const salada = new Salada({ nome, ingredientes, preco, imagem: imagem || '' });
+    await salada.save();
+    res.status(201).json({ message: 'Salada cadastrada com sucesso!' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/saladas', async (_, res) => {
+  const saladas = await Salada.find();
+  res.json(saladas);
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// ✅ Rota de teste
 app.get('/', (req, res) => {
   res.send('API ViSa Pizzaria online!');
   console.log(`Ping recebido - servidor está ativo!`);
 });
-
-//tambem foi criei um monitor no
-//https://dashboard.uptimerobot.com/monitors com checagem a cada 5 minutos
-//como funciona?
-//uptimerobot
-//envia uma requisição a render
-//aguarda resposta
-//verifica o tempo de resposta
-//obs.: essa requisição já da uma despertada no render mas como nao estava 
-//sendo suficiente criamos o codigo acima => // ✅Rota de teste para verificar se o servidor esta rodando
-
-
-
 
 // 9. Inicia o servidor
 const PORT = process.env.PORT || 3001;
